@@ -13,16 +13,39 @@ A Streamlit application that uses RAG (Retrieval-Augmented Generation) to answer
 
 ## Installation
 
-1. Install the required dependencies:
+1. Clone the repository:
+```bash
+git clone https://github.com/leofds12/rag_cv.git
+cd rag_cv
+```
+
+2. Create and activate a virtual environment (optional but recommended):
+
+Windows:
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+```
+Mac/Linux:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+3. Install the required dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
 2. Run the Streamlit app
+```bash
+streamlit run streamlit_rag_cv.py
+```
 
-3. Enter your personal OpenAI API Key in the input field to use the app (sharing your private key is not recommended).
+3. Enter your personal OpenAI API Key in the input field to use the app (do not share it!) If you don't have one, create a new one in https://openai.com/api/ (you must load some credit, 1 dollar is more than enough for many requests with GPT-3.5-turbo model).
 
-4. In the web app, upload your CV PDF file (no specific filename required).
+4. In the web app, upload your CV in PDF format.
 
 
 The app will:
@@ -48,3 +71,33 @@ The app will:
 - **Vector Store**: Chroma with OpenAI embeddings
 - **LLM**: GPT-3.5-turbo via OpenAI
 - **UI**: Streamlit with responsive layout
+
+🛠 Makefile Support (Optional)
+A simple Makefile is included for convenience. Run these commands from the project root:
+
+```bash
+make install     # Install Python dependencies
+make run         # Launch the Streamlit app
+make format      # Auto-format Python code with black
+make lint        # Run flake8 to check style issues
+```
+
+
+🐳 Docker Support (Optional)
+You can also build and run the app using Docker:
+
+1. Build the Docker image:
+```bash
+docker build -t rag_cv .
+```
+
+```bash
+docker run -p 8501:8501 -v $(pwd):/app rag_cv
+```
+
+*Notes*
+This app does not store any documents or data — everything runs locally unless your API key usage is tracked by OpenAI.
+
+Your OpenAI API key is not logged or stored by the app.
+
+The system is designed to work with any CV in English and may behave differently for other document types.
