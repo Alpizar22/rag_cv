@@ -34,7 +34,7 @@ if api_key:
 def load_rag_system(api_key, uploaded_file):
     """Load the RAG system components (not cached, depends on API key)."""
     try:
-        #os.environ["OPENAI_API_KEY"] = api_key  # set key before using any LangChain component
+        os.environ["OPENAI_API_KEY"] = api_key  # set key before using any LangChain component
 
         import tempfile
 
