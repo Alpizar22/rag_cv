@@ -1,0 +1,10 @@
+.venv_rag/
+__pycache__/
+.specstory/
+.env
+*.pdf
+rag_cv1.ipynb
+rag_cv1_improved.ipynb
+rag_cv.py
+README.md
+Dockerfile.remote

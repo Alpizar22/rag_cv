@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+from dotenv import load_dotenv
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
 from langchain_core.output_parsers import StrOutputParser
@@ -16,15 +17,12 @@ st.set_page_config(
 )
 
 # Environment variables
-os.environ['LANGCHAIN_TRACING_V2'] = 'true'
-os.environ['LANGCHAIN_ENDPOINT'] = 'https://api.smith.langchain.com'
-os.environ['LANGCHAIN_API_KEY'] = (
-    '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'
-)
-os.environ['OPENAI_API_KEY'] = (
-    'sk-proj-2veOBNDYcetVu8-B1l_mp9eXMitU0QjjOm4rBoL0OqbJDgxBVAaTdB_'
-    'XQqEC5uEA_tNw9Kc6d1T3BlbkFJr_BStqFpMOg-NX0uuG0-Nb9WjB8Cc_Idya2rHvbchoRiiq7QjRMqld0SfCo67EYtmGtojC6a0A'
-)
+load_dotenv()
+
+os.environ['LANGCHAIN_TRACING_V2'] = os.getenv('LANGCHAIN_TRACING_V2')
+os.environ['LANGCHAIN_ENDPOINT'] = os.getenv('LANGCHAIN_ENDPOINT')
+os.environ['LANGCHAIN_API_KEY'] = os.getenv('LANGCHAIN_API_KEY')
+os.environ['OPENAI_API_KEY'] = os.getenv('OPENAI_API_KEY')
 
 
 @st.cache_resource
