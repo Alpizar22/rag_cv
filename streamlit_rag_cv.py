@@ -19,9 +19,16 @@ st.set_page_config(
 # Environment variables
 load_dotenv()
 
-os.environ['LANGCHAIN_TRACING_V2'] = os.getenv('LANGCHAIN_TRACING_V2')
-os.environ['LANGCHAIN_ENDPOINT'] = os.getenv('LANGCHAIN_ENDPOINT')
-os.environ['LANGCHAIN_API_KEY'] = os.getenv('LANGCHAIN_API_KEY')
+tracing = os.getenv("LANGCHAIN_TRACING_V2")
+endpoint = os.getenv("LANGCHAIN_ENDPOINT")
+api_key = os.getenv("LANGCHAIN_API_KEY")
+
+if tracing:
+    os.environ["LANGCHAIN_TRACING_V2"] = tracing
+if endpoint:
+    os.environ["LANGCHAIN_ENDPOINT"] = endpoint
+if api_key:
+    os.environ["LANGCHAIN_API_KEY"] = api_key
 
 
 def load_rag_system(api_key, uploaded_file):

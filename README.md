@@ -1,6 +1,6 @@
 # CV RAG Assistant - Streamlit App
 
-A Streamlit application that uses LangChain and Retrieval-Augmented Generation (RAG) to answer questions about any uploaded CV using OpenAI's GPT models.
+A Streamlit application that uses LangChain-Langsmith and Retrieval-Augmented Generation (RAG) to answer questions about any uploaded CV using OpenAI's GPT models.
 
 
 ## Features
