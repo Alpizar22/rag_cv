@@ -22,43 +22,41 @@ load_dotenv()
 os.environ['LANGCHAIN_TRACING_V2'] = os.getenv('LANGCHAIN_TRACING_V2')
 os.environ['LANGCHAIN_ENDPOINT'] = os.getenv('LANGCHAIN_ENDPOINT')
 os.environ['LANGCHAIN_API_KEY'] = os.getenv('LANGCHAIN_API_KEY')
-os.environ['OPENAI_API_KEY'] = os.getenv('OPENAI_API_KEY')
 
 
-@st.cache_resource
-def load_rag_system():
-    """Load and cache the RAG system components."""
+def load_rag_system(api_key, uploaded_file):
+    """Load the RAG system components (not cached, depends on API key)."""
     try:
-        # Load documents
-        with st.spinner("Loading CV documents..."):
-            loader = PyPDFLoader(
-                r'C:\Users\leo\Documents\CV\Leonardo Ferreira da Silva CV - English.pdf'
-            )
-            docs = loader.load()
-            st.success(f"✅ Loaded {len(docs)} document(s)")
+        #os.environ["OPENAI_API_KEY"] = api_key  # set key before using any LangChain component
+
+        import tempfile
+
+        # Guardar temporalmente el archivo subido
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+            tmp_file.write(uploaded_file.getvalue())
+            tmp_path = tmp_file.name
+
+        loader = PyPDFLoader(tmp_path)
+        docs = loader.load()
+        st.success(f"✅ Loaded {len(docs)} document(s)")
 
         # Split documents
         with st.spinner("Processing documents..."):
-            text_splitter = RecursiveCharacterTextSplitter(
-                chunk_size=1000, chunk_overlap=200
-            )
+            text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
             splits = text_splitter.split_documents(docs)
             st.success(f"✅ Created {len(splits)} text chunks")
 
         # Create vector store
         with st.spinner("Creating vector embeddings..."):
-            vectorstore = Chroma.from_documents(
-                documents=splits, embedding=OpenAIEmbeddings()
-            )
+            vectorstore = Chroma.from_documents(documents=splits, embedding=OpenAIEmbeddings())
             retriever = vectorstore.as_retriever()
             st.success("✅ Vector store created")
 
         # Setup LLM and chain
         with st.spinner("Initializing AI model..."):
             llm = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0)
-            
+
             def format_docs(docs):
-                """Format documents for the prompt."""
                 return "\n\n".join(doc.page_content for doc in docs)
 
             # Enhanced prompt for better date handling
@@ -99,12 +97,25 @@ Answer:"""
 def main():
     """Main Streamlit application."""
     
+ 
     # Header
     st.title("📄 CV RAG Assistant")
-    st.markdown("Ask questions about Leonardo's CV and get AI-powered answers!")
+    api_key = st.text_input("🔑 Enter your OpenAI API Key:", type="password")
+
+
+    if not api_key:
+        st.warning("Please enter your API key to use the app.")
+        st.stop()
     
-    # Load RAG system
-    rag_chain, retriever = load_rag_system()
+    uploaded_file = st.file_uploader("📄 Upload your CV (PDF format)", type="pdf")
+
+    if not uploaded_file:
+        st.warning("Please upload a PDF file to continue.")
+        st.stop()    
+        
+    rag_chain, retriever = load_rag_system(api_key, uploaded_file)
+    #os.environ["OPENAI_API_KEY"] = api_key
+    st.markdown("Ask questions about the CV and get AI-powered answers!")
     
     if rag_chain is None:
         st.error("Failed to load the RAG system. Please check your configuration.")
@@ -114,18 +125,18 @@ def main():
     with st.sidebar:
         st.header("💡 Example Questions")
         example_questions = [
-            "What is his Python level?",
-            "What level is the person? Junior, semi or senior?",
-            "What are the exact dates of their PhD program?",
-            "How long have they been working at Outlier?",
-            "What is their current role and when did they start?",
-            "What is their total years of experience?",
-            "What are their main skills?",
-            "What education does he have?"
+            "What is the candidate level on X skill?",
+            "What is the candidate seniority?",
+            "What are the exact dates of X?",
+            "How long has the candidate working at X?",
+            "What is the candidate current role?",
+            "How many total years of experience?",
+            "What are the candidate main skills?",
+            "What education does the candidate have?"
         ]
         
         for question in example_questions:
-            if st.button(question, key=f"btn_{question[:20]}"):
+            if st.button(question, key=f"btn_{question[:30]}"):
                 st.session_state.question = question
     
     # Main content area
@@ -138,7 +149,7 @@ def main():
         question = st.text_input(
             "Enter your question about the CV:",
             value=st.session_state.get('question', ''),
-            placeholder="e.g., What is his Python level?"
+            placeholder="e.g., What is his level at X?"
         )
         
         # Submit button
@@ -169,7 +180,7 @@ def main():
     with col2:
         st.header("ℹ️ About")
         st.markdown("""
-        This RAG (Retrieval-Augmented Generation) system analyzes Leonardo's CV to answer your questions.
+        This RAG (Retrieval-Augmented Generation) system analyzes the uploaded CV to answer your questions.
         
         **Features:**
         - 📄 PDF document processing
