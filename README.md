@@ -1,6 +1,7 @@
 # CV RAG Assistant - Streamlit App
 
-A Streamlit application that uses RAG (Retrieval-Augmented Generation) to answer questions about any uploaded CV.
+A Streamlit application that uses LangChain and Retrieval-Augmented Generation (RAG) to answer questions about any uploaded CV using OpenAI's GPT models.
+
 
 ## Features
 
@@ -38,21 +39,21 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-2. Run the Streamlit app
+4. Run the Streamlit app
 ```bash
 streamlit run streamlit_rag_cv.py
 ```
 
-3. Enter your personal OpenAI API Key in the input field to use the app (do not share it!) If you don't have one, create a new one in https://openai.com/api/ (you must load some credit, 1 dollar is more than enough for many requests with GPT-3.5-turbo model).
+5. Enter your personal OpenAI API Key in the input field to use the app (do not share it!) If you don't have one, create a new one in https://openai.com/api/ (you must load some credit, 1 dollar is more than enough for many requests with GPT-3.5-turbo model).
 
-4. In the web app, upload your CV in PDF format.
+5. In the web app, upload your CV in PDF format.
 
 
 The app will:
-1. Load and process your CV documents
-2. Create vector embeddings
-3. Provide a web interface for asking questions
-4. Display AI-generated answers with relevant CV sections
+- Load and process your CV documents
+- Create vector embeddings
+- Provide a web interface for asking questions
+- Display AI-generated answers with relevant CV sections
 
 ## Example Questions
 
@@ -66,8 +67,9 @@ The app will:
    "What education does the candidate have?"
 
 ## Architecture
-
+- **LangChain**: Core framework to orchestrate document retrieval + LLM
 - **Document Loading**: PyPDFLoader for PDF processing
+- **Text Splitting**: RecursiveCharacterTextSplitter
 - **Vector Store**: Chroma with OpenAI embeddings
 - **LLM**: GPT-3.5-turbo via OpenAI
 - **UI**: Streamlit with responsive layout
@@ -95,7 +97,6 @@ docker build -t rag_cv .
 docker run -p 8501:8501 -v $(pwd):/app rag_cv
 ```
 
-*Notes*
 This app does not store any documents or data — everything runs locally unless your API key usage is tracked by OpenAI.
 
 Your OpenAI API key is not logged or stored by the app.
