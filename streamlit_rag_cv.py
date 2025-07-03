@@ -2,7 +2,7 @@ import streamlit as st
 import os
 from dotenv import load_dotenv
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import Chroma
+from langchain_community.vectorstores import FAISS
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
@@ -32,7 +32,6 @@ if api_key:
 
 
 def load_rag_system(api_key, uploaded_file):
-    """Carga del sistema RAG (no cacheado, depende de la API key)."""
     try:
         os.environ["OPENAI_API_KEY"] = api_key
 
@@ -53,20 +52,12 @@ def load_rag_system(api_key, uploaded_file):
             splits = text_splitter.split_documents(docs)
             st.success(f"✅ {len(splits)} fragmentos creados")
 
-        # Crear vectorstore con DuckDB (en memoria)
+        # Crear vectorstore usando FAISS (sin SQLite)
         with st.spinner("Creando embeddings..."):
-            vectorstore = Chroma.from_documents(
-                documents=splits,
-                embedding=OpenAIEmbeddings(),
-                persist_directory=None,
-                collection_name="temp_collection",
-                client_settings={
-                    "chromadb_impl": "duckdb+parquet",
-                    "persist_directory": None
-                }
-            )
+            embeddings = OpenAIEmbeddings()
+            vectorstore = FAISS.from_documents(splits, embeddings)
             retriever = vectorstore.as_retriever()
-            st.success("✅ Base vectorial creada")
+            st.success("✅ Base vectorial creada con FAISS")
 
         # Configurar LLM
         with st.spinner("Inicializando modelo de IA..."):
@@ -108,14 +99,11 @@ Respuesta:"""
 
 
 def main():
-    """Aplicación principal Streamlit"""
-    
-    # Encabezado
     st.title("📄 Asistente de CV con RAG")
     api_key = st.secrets["OPENAI_API_KEY"]
 
     if not api_key:
-        st.warning("Por favor ingresa tu API Key en los secrets para usar la aplicación.")
+        st.warning("Por favor configura tu API Key en secrets.toml para usar la app.")
         st.stop()
     
     uploaded_file = st.file_uploader("📄 Sube tu CV (en formato PDF)", type="pdf")
@@ -131,50 +119,33 @@ def main():
         st.error("No se pudo cargar el sistema RAG, revisa tu configuración.")
         return
 
-    # Barra lateral con preguntas ejemplo
     with st.sidebar:
         st.header("💡 Preguntas de ejemplo")
-        example_questions = [
+        for question in [
             "¿Cuál es el nivel del candidato en X habilidad?",
-            "¿Cuál es el nivel de seniority del candidato?",
             "¿Cuáles son las fechas exactas de X?",
-            "¿Cuánto tiempo lleva trabajando en X?",
-            "¿Cuál es el rol actual del candidato?",
-            "¿Cuántos años totales de experiencia tiene?",
-            "¿Cuáles son las principales habilidades del candidato?",
-            "¿Qué estudios tiene el candidato?"
-        ]
-        
-        for question in example_questions:
-            if st.button(question, key=f"btn_{question[:30]}"):
+            "¿Qué estudios tiene el candidato?",
+            "¿Cuál es el rol actual del candidato?"
+        ]:
+            if st.button(question):
                 st.session_state.question = question
 
-    # Área principal
     col1, col2 = st.columns([2, 1])
-    
+
     with col1:
         st.header("🤔 Haz una pregunta")
-        
         question = st.text_input(
-            "Escribe tu pregunta sobre el CV:",
+            "Pregunta sobre el CV:",
             value=st.session_state.get('question', ''),
-            placeholder="Ej: ¿Cuál es su nivel en X?"
+            placeholder="Ej: ¿Cuánto tiempo trabajó en X?"
         )
-        
-        if st.button("🔍 Obtener respuesta", type="primary"):
+        if st.button("🔍 Obtener respuesta"):
             if question.strip():
                 with st.spinner("🤖 Pensando..."):
                     try:
                         answer = rag_chain.invoke(question)
                         st.subheader("💡 Respuesta")
                         st.write(answer)
-                        
-                        with st.expander("📄 Secciones relevantes del CV"):
-                            relevant_docs = retriever.get_relevant_documents(question)
-                            for i, doc in enumerate(relevant_docs):
-                                st.markdown(f"**Sección {i+1}:**")
-                                st.text(doc.page_content)
-                                st.divider()
                     except Exception as e:
                         st.error(f"❌ Error al obtener respuesta: {str(e)}")
             else:
@@ -183,29 +154,11 @@ def main():
     with col2:
         st.header("ℹ️ Acerca de")
         st.markdown("""
-        Este sistema RAG (Generación aumentada con recuperación) analiza el CV que cargues para responder tus preguntas.
-        
-        **Características:**
-        - 📄 Procesamiento de documentos PDF
-        - 🔍 Búsqueda semántica
-        - 🤖 Respuestas con IA
-        - 📅 Precisión en fechas
-        
-        **Cómo funciona:**
-        1. Sube y procesa el CV
-        2. Crea embeddings semánticos
-        3. Busca la información relevante
-        4. Genera respuestas contextuales
+        Este sistema RAG analiza el CV y responde preguntas con IA.
+        - Procesa PDFs
+        - Usa búsqueda semántica
+        - Preciso en fechas
         """)
-        
-        st.header("🔧 Estado del sistema")
-        if rag_chain:
-            st.success("✅ Sistema RAG: Listo")
-            st.success("✅ Modelo de IA: Conectado")
-            st.success("✅ Documentos: Cargados")
-        else:
-            st.error("❌ Sistema no listo")
-
 
 if __name__ == "__main__":
     main()
