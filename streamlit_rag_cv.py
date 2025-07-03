@@ -2,7 +2,7 @@ import streamlit as st
 import os
 from dotenv import load_dotenv
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import Chroma
+from langchain_community.vectorstores import FAISS
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
@@ -53,14 +53,12 @@ def load_rag_system(api_key, uploaded_file):
             splits = text_splitter.split_documents(docs)
             st.success(f"✅ {len(splits)} fragmentos creados")
 
-        # Crear vectorstore
+        # Crear vectorstore con FAISS
         with st.spinner("Creando embeddings..."):
-            vectorstore = Chroma.from_documents(
-            	documents=splits,
-            	embedding=OpenAIEmbeddings(),
-            	persist_directory=None)  # esto fuerza modo in-memory y evita SQLite)
+            embeddings = OpenAIEmbeddings()
+            vectorstore = FAISS.from_documents(splits, embeddings)
             retriever = vectorstore.as_retriever()
-            st.success("✅ Base vectorial creada")
+            st.success("✅ Base vectorial creada con FAISS")
 
         # Configurar LLM
         with st.spinner("Inicializando modelo de IA..."):
@@ -203,3 +201,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
