@@ -2,7 +2,7 @@ import streamlit as st
 import os
 from dotenv import load_dotenv
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import FAISS
+from langchain_community.vectorstores import Chroma
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
@@ -53,12 +53,20 @@ def load_rag_system(api_key, uploaded_file):
             splits = text_splitter.split_documents(docs)
             st.success(f"✅ {len(splits)} fragmentos creados")
 
-        # Crear vectorstore con FAISS
+        # Crear vectorstore con DuckDB (en memoria)
         with st.spinner("Creando embeddings..."):
-            embeddings = OpenAIEmbeddings()
-            vectorstore = FAISS.from_documents(splits, embeddings)
+            vectorstore = Chroma.from_documents(
+                documents=splits,
+                embedding=OpenAIEmbeddings(),
+                persist_directory=None,
+                collection_name="temp_collection",
+                client_settings={
+                    "chromadb_impl": "duckdb+parquet",
+                    "persist_directory": None
+                }
+            )
             retriever = vectorstore.as_retriever()
-            st.success("✅ Base vectorial creada con FAISS")
+            st.success("✅ Base vectorial creada")
 
         # Configurar LLM
         with st.spinner("Inicializando modelo de IA..."):
@@ -107,7 +115,7 @@ def main():
     api_key = st.secrets["OPENAI_API_KEY"]
 
     if not api_key:
-        st.warning("Por favor ingresa tu API Key para usar la aplicación.")
+        st.warning("Por favor ingresa tu API Key en los secrets para usar la aplicación.")
         st.stop()
     
     uploaded_file = st.file_uploader("📄 Sube tu CV (en formato PDF)", type="pdf")
@@ -201,4 +209,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
