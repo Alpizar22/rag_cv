@@ -9,14 +9,14 @@ from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain.prompts import ChatPromptTemplate
 from langchain_community.document_loaders import PyPDFLoader
 
-# Page configuration
+# Configuración de la página
 st.set_page_config(
-    page_title="CV RAG Assistant",
+    page_title="Asistente de CV RAG",
     page_icon="📄",
     layout="wide"
 )
 
-# Environment variables
+# Variables de entorno
 load_dotenv()
 
 tracing = os.getenv("LANGCHAIN_TRACING_V2")
@@ -32,9 +32,9 @@ if api_key:
 
 
 def load_rag_system(api_key, uploaded_file):
-    """Load the RAG system components (not cached, depends on API key)."""
+    """Carga del sistema RAG (no cacheado, depende de la API key)."""
     try:
-        os.environ["OPENAI_API_KEY"] = api_key  # set key before using any LangChain component
+        os.environ["OPENAI_API_KEY"] = api_key
 
         import tempfile
 
@@ -45,172 +45,158 @@ def load_rag_system(api_key, uploaded_file):
 
         loader = PyPDFLoader(tmp_path)
         docs = loader.load()
-        st.success(f"✅ Loaded {len(docs)} document(s)")
+        st.success(f"✅ {len(docs)} documento(s) cargado(s)")
 
-        # Split documents
-        with st.spinner("Processing documents..."):
+        # Dividir documentos
+        with st.spinner("Procesando documentos..."):
             text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
             splits = text_splitter.split_documents(docs)
-            st.success(f"✅ Created {len(splits)} text chunks")
+            st.success(f"✅ {len(splits)} fragmentos creados")
 
-        # Create vector store
-        with st.spinner("Creating vector embeddings..."):
+        # Crear vectorstore
+        with st.spinner("Creando embeddings..."):
             vectorstore = Chroma.from_documents(documents=splits, embedding=OpenAIEmbeddings())
             retriever = vectorstore.as_retriever()
-            st.success("✅ Vector store created")
+            st.success("✅ Base vectorial creada")
 
-        # Setup LLM and chain
-        with st.spinner("Initializing AI model..."):
+        # Configurar LLM
+        with st.spinner("Inicializando modelo de IA..."):
             llm = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0)
 
             def format_docs(docs):
                 return "\n\n".join(doc.page_content for doc in docs)
 
-            # Enhanced prompt for better date handling
-            template = """You are a professional CV analyzer. Answer the question based only on the following context, paying special attention to dates, time periods, and chronological information:
+            template = """Eres un analista profesional de CV. Responde la pregunta solamente con el siguiente contexto, poniendo especial atención a fechas, periodos de tiempo e información cronológica:
 
 {context}
 
-Question: {question}
+Pregunta: {question}
 
-Instructions:
-- If the question involves dates or time periods, be very precise and specific
-- Include exact dates when available (e.g., "May 2024 - Present", "2005-2014")
-- If information is not in the context, say "I don't have enough information"
-- For experience levels, consider years of experience, roles, and responsibilities
-- Provide structured, clear responses
+Instrucciones:
+- Si la pregunta involucra fechas o periodos de tiempo, sé muy preciso y específico
+- Incluye fechas exactas cuando estén disponibles (por ejemplo: "mayo 2024 - presente", "2005-2014")
+- Si la información no está en el contexto, responde "No tengo suficiente información"
+- Para niveles de experiencia, considera años trabajados, roles y responsabilidades
+- Responde de forma estructurada y clara
 
-Answer:"""
+Respuesta:"""
 
             prompt = ChatPromptTemplate.from_template(template)
 
-            # Create RAG chain
             rag_chain = (
                 {"context": retriever | format_docs, "question": RunnablePassthrough()}
                 | prompt
                 | llm
                 | StrOutputParser()
             )
-            
-            st.success("✅ AI model ready")
+            st.success("✅ Modelo de IA listo")
 
         return rag_chain, retriever
 
     except Exception as e:
-        st.error(f"❌ Error loading RAG system: {str(e)}")
+        st.error(f"❌ Error cargando el sistema RAG: {str(e)}")
         return None, None
 
 
 def main():
-    """Main Streamlit application."""
+    """Aplicación principal Streamlit"""
     
- 
-    # Header
-    st.title("📄 CV RAG Assistant")
-    api_key = st.text_input("🔑 Enter your OpenAI API Key:", type="password")
-
+    # Encabezado
+    st.title("📄 Asistente de CV con RAG")
+    api_key = st.text_input("🔑 Ingresa tu API Key de OpenAI:", type="password")
 
     if not api_key:
-        st.warning("Please enter your API key to use the app.")
+        st.warning("Por favor ingresa tu API Key para usar la aplicación.")
         st.stop()
     
-    uploaded_file = st.file_uploader("📄 Upload your CV (PDF format)", type="pdf")
+    uploaded_file = st.file_uploader("📄 Sube tu CV (en formato PDF)", type="pdf")
 
     if not uploaded_file:
-        st.warning("Please upload a PDF file to continue.")
-        st.stop()    
-        
+        st.warning("Por favor sube un archivo PDF para continuar.")
+        st.stop()
+    
     rag_chain, retriever = load_rag_system(api_key, uploaded_file)
-    #os.environ["OPENAI_API_KEY"] = api_key
-    st.markdown("Ask questions about the CV and get AI-powered answers!")
-    
+    st.markdown("Haz preguntas sobre el CV y obtén respuestas con IA:")
+
     if rag_chain is None:
-        st.error("Failed to load the RAG system. Please check your configuration.")
+        st.error("No se pudo cargar el sistema RAG, revisa tu configuración.")
         return
-    
-    # Sidebar with example questions
+
+    # Barra lateral con preguntas ejemplo
     with st.sidebar:
-        st.header("💡 Example Questions")
+        st.header("💡 Preguntas de ejemplo")
         example_questions = [
-            "What is the candidate level on X skill?",
-            "What is the candidate seniority?",
-            "What are the exact dates of X?",
-            "How long has the candidate working at X?",
-            "What is the candidate current role?",
-            "How many total years of experience?",
-            "What are the candidate main skills?",
-            "What education does the candidate have?"
+            "¿Cuál es el nivel del candidato en X habilidad?",
+            "¿Cuál es el nivel de seniority del candidato?",
+            "¿Cuáles son las fechas exactas de X?",
+            "¿Cuánto tiempo lleva trabajando en X?",
+            "¿Cuál es el rol actual del candidato?",
+            "¿Cuántos años totales de experiencia tiene?",
+            "¿Cuáles son las principales habilidades del candidato?",
+            "¿Qué estudios tiene el candidato?"
         ]
         
         for question in example_questions:
             if st.button(question, key=f"btn_{question[:30]}"):
                 st.session_state.question = question
-    
-    # Main content area
+
+    # Área principal
     col1, col2 = st.columns([2, 1])
     
     with col1:
-        st.header("🤔 Ask a Question")
+        st.header("🤔 Haz una pregunta")
         
-        # Text input for question
         question = st.text_input(
-            "Enter your question about the CV:",
+            "Escribe tu pregunta sobre el CV:",
             value=st.session_state.get('question', ''),
-            placeholder="e.g., What is his level at X?"
+            placeholder="Ej: ¿Cuál es su nivel en X?"
         )
         
-        # Submit button
-        if st.button("🔍 Get Answer", type="primary"):
+        if st.button("🔍 Obtener respuesta", type="primary"):
             if question.strip():
-                with st.spinner("🤖 Thinking..."):
+                with st.spinner("🤖 Pensando..."):
                     try:
-                        # Get answer
                         answer = rag_chain.invoke(question)
-                        
-                        # Display answer
-                        st.subheader("💡 Answer")
+                        st.subheader("💡 Respuesta")
                         st.write(answer)
                         
-                        # Show relevant documents
-                        with st.expander("📄 View Relevant CV Sections"):
+                        with st.expander("📄 Secciones relevantes del CV"):
                             relevant_docs = retriever.get_relevant_documents(question)
                             for i, doc in enumerate(relevant_docs):
-                                st.markdown(f"**Section {i+1}:**")
+                                st.markdown(f"**Sección {i+1}:**")
                                 st.text(doc.page_content)
                                 st.divider()
-                                
                     except Exception as e:
-                        st.error(f"❌ Error getting answer: {str(e)}")
+                        st.error(f"❌ Error al obtener respuesta: {str(e)}")
             else:
-                st.warning("⚠️ Please enter a question.")
+                st.warning("⚠️ Por favor escribe una pregunta.")
     
     with col2:
-        st.header("ℹ️ About")
+        st.header("ℹ️ Acerca de")
         st.markdown("""
-        This RAG (Retrieval-Augmented Generation) system analyzes the uploaded CV to answer your questions.
+        Este sistema RAG (Generación aumentada con recuperación) analiza el CV que cargues para responder tus preguntas.
         
-        **Features:**
-        - 📄 PDF document processing
-        - 🔍 Semantic search
-        - 🤖 AI-powered responses
-        - 📅 Date-aware answers
+        **Características:**
+        - 📄 Procesamiento de documentos PDF
+        - 🔍 Búsqueda semántica
+        - 🤖 Respuestas con IA
+        - 📅 Precisión en fechas
         
-        **How it works:**
-        1. Uploads and processes CV documents
-        2. Creates vector embeddings
-        3. Searches for relevant information
-        4. Generates contextual answers
+        **Cómo funciona:**
+        1. Sube y procesa el CV
+        2. Crea embeddings semánticos
+        3. Busca la información relevante
+        4. Genera respuestas contextuales
         """)
         
-        # System status
-        st.header("🔧 System Status")
+        st.header("🔧 Estado del sistema")
         if rag_chain:
-            st.success("✅ RAG System: Ready")
-            st.success("✅ AI Model: Connected")
-            st.success("✅ Documents: Loaded")
+            st.success("✅ Sistema RAG: Listo")
+            st.success("✅ Modelo de IA: Conectado")
+            st.success("✅ Documentos: Cargados")
         else:
-            st.error("❌ System: Not Ready")
+            st.error("❌ Sistema no listo")
 
 
 if __name__ == "__main__":
-    main() 
+    main()
