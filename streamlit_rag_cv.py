@@ -55,7 +55,10 @@ def load_rag_system(api_key, uploaded_file):
 
         # Crear vectorstore
         with st.spinner("Creando embeddings..."):
-            vectorstore = Chroma.from_documents(documents=splits, embedding=OpenAIEmbeddings())
+            vectorstore = Chroma.from_documents(
+            	documents=splits,
+            	embedding=OpenAIEmbeddings(),
+            	persist_directory=None  # esto fuerza modo in-memory y evita SQLite)
             retriever = vectorstore.as_retriever()
             st.success("✅ Base vectorial creada")
 
