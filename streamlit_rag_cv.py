@@ -103,7 +103,7 @@ def main():
     
     # Encabezado
     st.title("📄 Asistente de CV con RAG")
-    api_key = st.text_input("🔑 Ingresa tu API Key de OpenAI:", type="password")
+    api_key = st.secrets["OPENAI_API_KEY"]
 
     if not api_key:
         st.warning("Por favor ingresa tu API Key para usar la aplicación.")
